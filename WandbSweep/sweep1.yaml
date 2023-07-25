@@ -1,0 +1,66 @@
+program: /data/duongdb/ClassifyManyFaceConditions/train.py
+method: bayes
+metric:
+  name: bal_acc
+  goal: maximize
+parameters:
+  init_lr:
+    values:
+    - 0.00001
+    - 0.00003
+    - 0.00005
+    - 0.0001
+  dropout:
+    values: 
+    - 0.1
+    - 0.2
+    - 0.3
+  scheduler_scaler:
+    values: 
+    - 10
+    - 5
+  batch_size: 
+    values: 
+    - 32
+early_terminate:
+  type: hyperband
+  max_iter: 30
+  s: 3
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - --kernel_type
+  - "9c_b4ns_448"
+  - --image_csv
+  - "/data/duongdb/ManyFaceConditions01312022/Classify/ManyCondition-Normal-Other-RmBg-train.csv"
+  - --image_size 
+  - 448
+  - --enet_type
+  - "tf_efficientnet_b4_ns"
+  - --num_workers
+  - 8
+  - --out_dim
+  - 11
+  - --n_epochs
+  - 30
+  - --use_amp
+  - --model_dir
+  - "/data/duongdb/ManyFaceConditions01312022/Classify/b4ns448wl5ss10lr1e-05dp0.2b32ntest111CondPretSweep"
+  - --log_dir
+  - "/data/duongdb/ManyFaceConditions01312022/Classify/b4ns448wl5ss10lr1e-05dp0.2b32ntest111CondPretSweep"
+  - --CUDA_VISIBLE_DEVICES
+  - "0"
+  - --fold
+  - 1
+  - --seed
+  - 1
+  - --n_test
+  - 1
+  - --weighted_loss
+  - '{"22q11DS":1, "BWS":5, "CdLS":5, "Down":5, "KS":5, "NS":5, "PWS":5, "RSTS1":5, "Unaffected":5, "WHS":5, "WS":1}'
+  - --loaded_model
+  - "/data/duongdb/ManyFaceConditions01312022/Classify/b4ns448ss10lr1e-05dp0.2b64ntest1pretrain-50knormal-gender/9c_b4ns_448_best_all_fold0.pth"
+  - --from_pretrain
+  - --sweep
+
