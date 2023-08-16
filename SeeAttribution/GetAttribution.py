@@ -50,12 +50,12 @@ def GetAttributionPlot (transformed_img, output, img_path, original_resize, attr
   # ! @n_steps will determine how much memory we need, low--> bad approx to the intergral, high--> too much mem
   # ! baseline is black image. We may try different baselines.
   if args.attribution_model == 'Occlusion': 
-    attributions_ig = attribution_model.attribute(transformed_img, target=pred_label_idx, strides = (3, 10, 10), sliding_window_shapes=(3,20, 20) )
+    attributions_batch = attribution_model.attribute(transformed_img, target=pred_label_idx, strides = (3, 10, 10), sliding_window_shapes=(3,20, 20) )
   else: 
     if not args.noise_tunnel: 
-      attributions_ig = attribution_model.attribute(transformed_img, target=pred_label_idx, n_steps=75)
+      attributions_batch = attribution_model.attribute(transformed_img, target=pred_label_idx, n_steps=75)
     else: 
-      attributions_ig = attribution_model.attribute(transformed_img, target=pred_label_idx, nt_samples=5, nt_type='smoothgrad_sq')
+      attributions_batch = attribution_model.attribute(transformed_img, target=pred_label_idx, nt_samples=5, nt_type='smoothgrad_sq')
   
   # default_cmap = LinearSegmentedColormap.from_list('custom blue', # white-->black color gradient scale
   #                                                 [ (0, '#ffffff'),
@@ -68,9 +68,9 @@ def GetAttributionPlot (transformed_img, output, img_path, original_resize, attr
 
   # we can only plot each image one at a time
 
-  for b in range(transformed_img.shape[0]): 
+  for b in range(transformed_img.shape[0]): # do this for each image in @attributions_batch. @transformed_img and @attributions_batch have same number of images
 
-    attribution_np = attributions_ig[b].squeeze().cpu().detach().numpy() # ! c x h x w ? 
+    attribution_np = attributions_batch[b].squeeze().cpu().detach().numpy() # ! c x h x w ? 
     attribution_np_dim_hwc = np.transpose(attribution_np, (1,2,0)) # ! (224, 224, 3), h x w x chanels
 
     this_image_name = img_path[b].split('/')[-1]
@@ -83,7 +83,7 @@ def GetAttributionPlot (transformed_img, output, img_path, original_resize, attr
     
     # ! get embedding of @attribution_np? attribution_np is not between 0-1 as in standard images (do we care?)
     if args.attr_np_as_vec: 
-      x = nn_model(attributions_ig[b].unsqueeze(0)) # batch x 3 x size x size. # @nn_model can be EfficientNet, Resnet ...
+      x = nn_model(attributions_batch[b].unsqueeze(0)) # batch x 3 x size x size. # @nn_model can be EfficientNet, Resnet ...
       x = x.squeeze().cpu().detach().numpy()
       outpath = re.sub ( r'\.(jpg|png|jpeg|PNG)', '_attr_as_vec.pickle', this_image_name)
       pickle.dump ( x, open ( os.path.join(folder_path, outpath), 'wb' ) ) 
