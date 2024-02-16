@@ -91,6 +91,33 @@ os.chdir(path)
 # ! weigh the images, so each condition has almost uniform weights 
 DICT_LOSS_SCALE = '{"22q11DS":4, "BWS":8, "CdLS":21, "Down":7, "KS":10, "NS":8, "PWS":24, "RSTS1":24, "Unaffected":11, "WHS":14, "WS":5}' 
 
+# 22q11DS	591	4
+# BWS	308	8
+# CdLS	120	21
+# Down	352	7
+# KS	246	10
+# Normal	2500	1
+# NS	327	8
+# PWS	104	24
+# RSTS1	105	24
+# Unaffected	228	11
+# WHS	178	14
+# WS	529	5
+
+# 22q11DS	591	4.230118443	4
+# BWS	308	8.116883117	8
+# CdLS	120	20.83333333	20
+# Down	352	7.102272727	7
+# KS	246	10.16260163	10
+# Normal	2500	1	1
+# NS	325	7.692307692	7
+# PWS	104	24.03846154	24
+# RSTS1	105	23.80952381	23
+# Unaffected	228	10.96491228	10
+# WHS	178	14.04494382	14
+# WS	531	4.708097928	4
+
+
 # ---------------------------------------------------------------------------- #
 
 # ! change name 
@@ -100,30 +127,25 @@ if ("NormalAsUnaff" in SUFFIX):
   OUTDIM = 11
   DICT_LOSS_SCALE ['Unaffected'] = 1
 
-
-# ---------------------------------------------------------------------------- #
-numberoflayers=0
-
 # ---------------------------------------------------------------------------- #
 
 counter = 0
 label_index = np.arange ( OUTDIM ) # ! MAY WANT TO EXCLUDE SOME LABELS 
 
 # for ATTR_INDEX in label_index : # ! if run attribution 
-#   for ATTRIBUTELABEL in 'WS,22q11DS,NS,BWS,CdLS,Down,KS,PWS,RSTS1,WHS,Unaffected,Normal'.split(',') : 
+#   for ATTRIBUTELABEL in 'WS,22q11DS,NS,BWS,CdLS,Down,KS,PWS,RSTS1,WHS,Unaffected,Normal'.split(',') : # ! if run attribution 
     # 'BWS,CdLS,Down,KS,NS,PWS,RSTS1,WHS,Unaffected,WS,22q11DS,Normal'.split(','): 
     # 'Unaffected'.split(','): #,CdLS,Down,KS,NS,PWS,RSTS1,WHS,Unaffected,WS,22q11DS
 for fold in [0,1,2,3,4]: # 0,1,2,3,4
-  for imagesize in [448]: # 448 512 768 640
-    for weight in ['Equal']: # 5,10, 'Equal' 'EqualOption2'
+  for imagesize in [448]: # 448 512 768 640 # ! see which image size may work best, 448 seems to be best
+    for weight in ['Equal']: # ! we can use different types of naming system for the sample weights
       for schedulerscaler in [10]:
-        for learn_rate in [0.00003]:  # 0.00001,0.00003  # we used this too, 0.0001
+        for learn_rate in [0.00003]:  # 0.00001,0.00003  # ! tune learning rate, 0.00003 works best 
           for dropout in [0.2]:
             script2 = re.sub('WEIGHT',str(weight),script)
             script2 = re.sub('DICT_LOSS_SCALE',str(DICT_LOSS_SCALE),script2)
             script2 = re.sub('OUTDIM',str(OUTDIM),script2)
             script2 = re.sub('IMAGESIZE',str(imagesize),script2)
-            script2 = re.sub('numberoflayers',str(numberoflayers),script2)
             script2 = re.sub('SUFFIX',str(SUFFIX),script2)
             script2 = re.sub('LEARNRATE',str(learn_rate),script2)
             script2 = re.sub('ScheduleScaler',str(schedulerscaler),script2)
@@ -143,7 +165,7 @@ for fold in [0,1,2,3,4]: # 0,1,2,3,4
             # os.system('sbatch --partition=gpu --time=10:00:00 --gres=gpu:v100x:1 --mem=8g --cpus-per-task=8 ' + scriptname )
             os.system('sbatch --partition=gpu --time=00:40:00 --gres=gpu:p100:1 --mem=6g --cpus-per-task=8 ' + scriptname )
             # ! 
-            # if (ATTRIBUTELABEL == 'Unaffected') or (ATTRIBUTELABEL == 'Normal'): 
+            # if (ATTRIBUTELABEL == 'Unaffected') or (ATTRIBUTELABEL == 'Normal'): # ! if run attribution 
             #   os.system('sbatch --time=6:30:00 --mem=64g --cpus-per-task=12 ' + scriptname )
             # else: 
             #   os.system('sbatch --time=4:30:00 --mem=64g --cpus-per-task=12 ' + scriptname )
@@ -154,31 +176,5 @@ exit()
 
 
 
-# 22q11DS	591	4
-# BWS	308	8
-# CdLS	120	21
-# Down	352	7
-# KS	246	10
-# Normal	2500	1
-# NS	327	8
-# PWS	104	24
-# RSTS1	105	24
-# Unaffected	228	11
-# WHS	178	14
-# WS	529	5
-
-
-# 22q11DS	591	4.230118443	4
-# BWS	308	8.116883117	8
-# CdLS	120	20.83333333	20
-# Down	352	7.102272727	7
-# KS	246	10.16260163	10
-# Normal	2500	1	1
-# NS	325	7.692307692	7
-# PWS	104	24.03846154	24
-# RSTS1	105	23.80952381	23
-# Unaffected	228	10.96491228	10
-# WHS	178	14.04494382	14
-# WS	531	4.708097928	4
 
 
