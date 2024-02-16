@@ -3,11 +3,6 @@ from datetime import datetime
 import time
 import numpy as np 
 
-# sbatch --partition=gpu --time=1-00:00:00 --gres=gpu:p100:2 --mem=12g --cpus-per-task=24
-# sbatch --partition=gpu --time=4:00:00 --gres=gpu:p100:1 --mem=16g --cpus-per-task=24
-# sbatch --partition=gpu --time=1-00:00:00 --gres=gpu:p100:2 --mem=10g --cpus-per-task=20
-# sbatch --time=12:00:00 --mem=100g --cpus-per-task=24
-# sinteractive --time=3:00:00 --gres=gpu:p100:1 --mem=8g --cpus-per-task=8
 
 script = """#!/bin/bash
 
@@ -26,7 +21,7 @@ imagesize=IMAGESIZE
 schedulerscaler=ScheduleScaler 
 dropout=DROPOUT
 
-batchsize=64 # 64 ... 64 doesn't work with new pytorch 1.7 ?? why ?? we were using 1.6 
+batchsize=64 
 
 ntest=1 # ! we tested 1, and it looks fine at 1, don't need data aug during testing
 
@@ -52,39 +47,28 @@ cd /data/duongdb/ClassifyManyFaceConditions
 
 # ! train
 
-# loaded_model=/data/duongdb/ManyFaceConditions12012022/Classify/b4ns448ss10lr1e-05dp0.2b64ntest1pretrain-50knormal-gender/9c_b4ns_448_best_all_fold0.pth
+loaded_model=/data/duongdb/ManyFaceConditions12012022/Classify/b4ns448ss10lr1e-05dp0.2b64ntest1pretrain-50knormal-gender/9c_b4ns_448_best_all_fold0.pth
 
-# imagecsv=$maindir/ManyCondition+500Normal-AlignPix255-train.csv # ! train input -norm_as_unaff
+imagecsv=$maindir/ManyCondition+500Normal-AlignPix255-train.csv # ! train input 
 
-# python train.py --image_csv $imagecsv --kernel_type $kernel_type --image_size $imagesize --enet_type tf_efficientnet_b4_ns --use_amp --CUDA_VISIBLE_DEVICES 0 --model_dir $modeldir --log_dir $logdir --num_workers 8 --fold 'FOLD' --out_dim OUTDIM --weighted_loss 'DICT_LOSS_SCALE' --n_epochs 30 --batch_size $batchsize --init_lr $learningrate --scheduler_scaler $schedulerscaler --dropout $dropout --n_test $ntest --from_pretrain --loaded_model $loaded_model
+python train.py --image_csv $imagecsv --kernel_type $kernel_type --image_size $imagesize --enet_type tf_efficientnet_b4_ns --use_amp --CUDA_VISIBLE_DEVICES 0 --model_dir $modeldir --log_dir $logdir --num_workers 8 --fold 'FOLD' --out_dim OUTDIM --weighted_loss 'DICT_LOSS_SCALE' --n_epochs 30 --batch_size $batchsize --init_lr $learningrate --scheduler_scaler $schedulerscaler --dropout $dropout --n_test $ntest --from_pretrain --loaded_model $loaded_model
 
 
 # ---------------------------------------------------------------------------- #
 
 # ! eval on our test set
 
-imagecsv=$maindir/ManyCondition+500Normal-AlignPix255tobii-test.csv # ! test input # ! actual test set -norm_as_unaff
+imagecsv=$maindir/ManyCondition+500Normal-AlignPix255tobii-test.csv # ! test input 
 
 python evaluate.py --image_csv $imagecsv --kernel_type $kernel_type --model_dir $modeldir --log_dir $logdir --image_size $imagesize --enet_type tf_efficientnet_b4_ns --oof-dir $oofdir --batch_size 64 --num_workers 4 --fold 'FOLD' --out_dim OUTDIM --CUDA_VISIBLE_DEVICES 0 --dropout $dropout --do_test --n_test $ntest
-
-# --ret_vec_rep  # ! probably don't need to see vec rep
-
-# ---------------------------------------------------------------------------- #
-
-# ! eval on manual data... may not be a real test set.  
-
-# imagecsv=$maindir/ManyCondition+500Normal-AlignPix255-test.csv # ! test input # ! actual test set -norm_as_unaff
-
-# python evaluate.py --image_csv $imagecsv --kernel_type $kernel_type --model_dir $modeldir --log_dir $logdir --image_size $imagesize --enet_type tf_efficientnet_b4_ns --oof-dir $oofdir --batch_size 64 --num_workers 4 --fold 'FOLD' --out_dim OUTDIM --CUDA_VISIBLE_DEVICES 0 --dropout $dropout --do_test_manual_name 'test-on-bg' --n_test $ntest
-
 
 # ---------------------------------------------------------------------------- #
 
 # ! look at pixel
 
-# oofdir=$maindir/$model_folder_name/EvalTestImgLabelIndexATTR_INDEX # LabelIndex0 # TopLabel # ! SPECIFIC LABEL ?? 
+# oofdir=$maindir/$model_folder_name/EvalTestImgLabelIndexATTR_INDEX # ! do this for each LABEL, it will take a lot of time to finish. 
 
-# imagecsv=$maindir/ManyCondition+500Normal-AlignPix255-test.csv # ! test input -norm_as_unaff
+# imagecsv=$maindir/ManyCondition+500Normal-AlignPix255-test.csv # ! test input 
 
 # imagecsv=$maindir/ManyCondition+500Normal-AlignPix255tobii-test.csv
 
@@ -95,9 +79,6 @@ python evaluate.py --image_csv $imagecsv --kernel_type $kernel_type --model_dir 
 
 # done
 
-# --attr_label_index 10 --attr_top_label
-
-
 """
 
 # ---------------------------------------------------------------------------- #
@@ -107,21 +88,8 @@ os.chdir(path)
 
 # ---------------------------------------------------------------------------- #
 
-# ! manual scale that seems to work 
-# DICT_LOSS_SCALE = '{"22q11DS":2, "BWS":10, "CdLS":10, "Down":10, "KS":10, "NS":10, "PWS":10, "RSTS1":10, "Unaffected":10, "WHS":10, "WS":2}'
-
-# ! scale to equal weight as normal
-# DICT_LOSS_SCALE = '{"22q11DS":4.2, "BWS":25.5, "CdLS":20.5, "Down":20.7, "KS":18.5, "NS":18.0, "PWS":23.8, "RSTS1":23.6, "Unaffected":10.8, "WHS":14.0, "WS":4.7}'
-# ! rounded
-# DICT_LOSS_SCALE = '{"22q11DS":4, "BWS":26, "CdLS":21, "Down":21, "KS":19, "NS":18, "PWS":24, "RSTS1":24, "Unaffected":11, "WHS":14, "WS":5}'
-# DICT_LOSS_SCALE = '{"22q11DS":4, "BWS":8, "CdLS":21, "Down":7, "KS":10, "NS":8, "PWS":24, "RSTS1":24, "Unaffected":11, "WHS":14, "WS":5}' # ! add more images 
-
-DICT_LOSS_SCALE = '{"22q11DS":4, "BWS":8, "CdLS":21, "Down":7, "KS":10, "NS":8, "PWS":24, "RSTS1":24, "Unaffected":11, "WHS":14, "WS":5}' # ! add more images ... fix test set to match tobii
-
-# ! rounded downweigh 22q and ws
-# DICT_LOSS_SCALE = '{"22q11DS":3, "BWS":26, "CdLS":21, "Down":21, "KS":19, "NS":18, "PWS":24, "RSTS1":24, "Unaffected":11, "WHS":14, "WS":3}'
-
-
+# ! weigh the images, so each condition has almost uniform weights 
+DICT_LOSS_SCALE = '{"22q11DS":4, "BWS":8, "CdLS":21, "Down":7, "KS":10, "NS":8, "PWS":24, "RSTS1":24, "Unaffected":11, "WHS":14, "WS":5}' 
 
 # ---------------------------------------------------------------------------- #
 
@@ -141,7 +109,7 @@ numberoflayers=0
 counter = 0
 label_index = np.arange ( OUTDIM ) # ! MAY WANT TO EXCLUDE SOME LABELS 
 
-# for ATTR_INDEX in label_index : 
+# for ATTR_INDEX in label_index : # ! if run attribution 
 #   for ATTRIBUTELABEL in 'WS,22q11DS,NS,BWS,CdLS,Down,KS,PWS,RSTS1,WHS,Unaffected,Normal'.split(',') : 
     # 'BWS,CdLS,Down,KS,NS,PWS,RSTS1,WHS,Unaffected,WS,22q11DS,Normal'.split(','): 
     # 'Unaffected'.split(','): #,CdLS,Down,KS,NS,PWS,RSTS1,WHS,Unaffected,WS,22q11DS
